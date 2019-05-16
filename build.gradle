@@ -1,0 +1,64 @@
+buildscript {
+	repositories {
+		// For stdproject
+		// mavenLocal()
+		// For stdproject
+		// maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
+		mavenCentral()
+		jcenter()
+	}
+
+	dependencies {
+		classpath 'org.anarres.gradle:gradle-stdproject-plugin:1.0.9'
+	}
+}
+
+apply plugin: 'org.anarres.stdmodule'
+apply plugin: 'java-gradle-plugin'
+
+stdmodule {
+	description "A Gradle plugin for the License3J license manager."
+	author id: 'shevek', name: 'Shevek', email: 'github@anarres.org'
+	license 'Apache-2.0'
+}
+
+group = "org.anarres.gradle"
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+repositories {
+	// For license3j-SNAPSHOT
+	// mavenLocal()
+	// For license3j-SNAPSHOT
+	// maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
+	mavenCentral()
+}
+
+dependencies {
+	compile gradleApi()
+	implementation 'com.google.code.findbugs:annotations:3.0.1'
+	implementation 'org.anarres.mirrors.license3j:license3j:3.1.0.0'
+	// compile 'org.bouncycastle:bcprov-ext-jdk15on:1.61'
+}
+
+gradlePlugin {
+	plugins {
+		keys {
+			id = 'org.anarres.license3j.keys'
+			implementationClass = 'org.anarres.gradle.plugin.license3j.License3jKeysPlugin'
+		}
+		license {
+			id = 'org.anarres.license3j'
+			implementationClass = 'org.anarres.gradle.plugin.license3j.License3jPlugin'
+		}
+	}
+}
+
+test {
+	testLogging {
+		showExceptions true
+		exceptionFormat "full"
+		showStandardStreams true
+	}
+}
+

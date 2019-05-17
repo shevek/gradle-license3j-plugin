@@ -37,6 +37,7 @@ import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 import static java.time.temporal.ChronoField.*;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -183,8 +184,8 @@ public class GenerateLicenseTask extends ConventionTask {
         feature(Feature.Create.stringFeature(name, value));
     }
 
-    public void feature(@Nonnull String name, @Nonnull Date value) {
-        feature(Feature.Create.dateFeature(name, value));
+    public void feature(@Nonnull String name, @Nonnull Instant value) {
+        feature(Feature.Create.instantFeature(name, value));
     }
 
     public void feature(@Nonnull String name, @Nonnull UUID value) {
@@ -199,12 +200,8 @@ public class GenerateLicenseTask extends ConventionTask {
         licenseId(UUID.fromString(value));
     }
 
-    public void issuedAt(@Nonnull Date value) {
-        feature("issuedAt", value);
-    }
-
     public void issuedAt(@Nonnull Instant value) {
-        issuedAt(Date.from(value));
+        feature("issuedAt", value);
     }
 
     public void issuedAt(@Nonnull String value) {
@@ -212,12 +209,8 @@ public class GenerateLicenseTask extends ConventionTask {
         issuedAt(datetime.toInstant());
     }
 
-    public void expiresAt(@Nonnull Date value) {
-        feature("expiresAt", value);
-    }
-
     public void expiresAt(@Nonnull Instant value) {
-        expiresAt(Date.from(value));
+        feature("expiresAt", value);
     }
 
     public void expiresAt(@Nonnull String value) {
@@ -231,8 +224,7 @@ public class GenerateLicenseTask extends ConventionTask {
      * @param unit
      */
     public void expiresAfterIssue(@Nonnegative long value, @Nonnull TemporalUnit unit) {
-        Date issuedAtDate = features.get("issuedAt").getDate();
-        Instant issuedAt = Instant.ofEpochMilli(issuedAtDate.getTime());
+        Instant issuedAt = features.get("issuedAt").getInstant();
         expiresAt(issuedAt.plus(value, unit));
     }
 
@@ -294,14 +286,18 @@ public class GenerateLicenseTask extends ConventionTask {
             License license = new License();
             for (Feature feature : features.values())
                 license.add(feature);
+            if (license.getLicenseId() == null)
+                license.setLicenseId();
             license.sign(keyPair.getPair().getPrivate(), digest);
             if (verbose)
                 dump(license);
-            if (!license.isOK(keyPair.getPair().getPublic()))
-                throw new IllegalStateException("Failed to generate a valid license.");
             try (LicenseWriter writer = new LicenseWriter(getLicenseFile())) {
                 writer.write(license, licenseFormat);
             }
+            if (verbose)
+                getLogger().info("Generated license id=" + license.getLicenseId() + ", fingerprint=" + license.fingerprint());
+            if (!license.isOK(keyPair.getPair().getPublic()))
+                throw new IllegalStateException("Failed to generate a valid license.");
         } catch (Exception e) {
             getLogger().error("License generation failed: " + e, e);
             throw e;

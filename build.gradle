@@ -28,8 +28,6 @@ targetCompatibility = '1.8'
 
 repositories {
 	// For license3j-SNAPSHOT
-	// mavenLocal()
-	// For license3j-SNAPSHOT
 	// maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
 	mavenCentral()
 }
@@ -37,7 +35,7 @@ repositories {
 dependencies {
 	compile gradleApi()
 	implementation 'com.google.code.findbugs:annotations:3.0.1'
-	implementation 'org.anarres.mirrors.license3j:license3j:3.1.0.0'
+	implementation 'org.anarres.mirrors.license3j:license3j:3.1.0.1'
 	// compile 'org.bouncycastle:bcprov-ext-jdk15on:1.61'
 }
 

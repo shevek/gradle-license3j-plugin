@@ -68,7 +68,7 @@ public class License3jPluginApplyTest {
     @Test
     public void testApply() throws Exception {
         String text = "plugins { id 'java';\nid 'org.anarres.license3j'; }\n"
-                + "generateLicense { privateKeyFile 'build/license3j/private.key'; publicKeyFile 'build/license3j/public.key'; }\n";
+                + "generateLicense { privateKeyFile 'build/license3j/private.key'; publicKeyFile 'build/license3j/public.key'; expiresAt '2019-06-07'; }\n";
         Files.write(testProjectBuildFile.toPath(), Collections.singletonList(text));
 
         GradleRunner runner = GradleRunner.create()

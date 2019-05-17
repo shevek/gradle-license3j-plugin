@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.ResolverStyle;
@@ -20,10 +21,8 @@ import java.time.format.SignStyle;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
-import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
@@ -38,6 +37,9 @@ import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 import static java.time.temporal.ChronoField.*;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  *
@@ -71,24 +73,33 @@ public class GenerateLicenseTask extends ConventionTask {
                 .optionalEnd() // [seconds] Not in Hive
                 .optionalEnd(); // [time]
         builder
+                .optionalStart().appendZoneOrOffsetId().optionalEnd(); // [zone]
+        builder
                 .parseDefaulting(HOUR_OF_DAY, HOUR_OF_DAY.range().getMinimum())
                 .parseDefaulting(MINUTE_OF_HOUR, MINUTE_OF_HOUR.range().getMinimum())
-                .parseDefaulting(SECOND_OF_MINUTE, SECOND_OF_MINUTE.range().getMinimum());
+                .parseDefaulting(SECOND_OF_MINUTE, SECOND_OF_MINUTE.range().getMinimum())
+                .parseDefaulting(OFFSET_SECONDS, 0);
         DATE_PARSER = builder.toFormatter().withResolverStyle(ResolverStyle.LENIENT);
     }
 
+    private final Map<String, Feature> features = new LinkedHashMap<>();
     public Object privateKeyFile = PRIVATE_KEY_FILE;
     public Object publicKeyFile = PUBLIC_KEY_FILE;
-    @Input
     public IOFormat keyFormat = License3jPlugin.DEFAULT_KEY_FORMAT;
-    @Input
-    public List<Feature> features = new ArrayList<>();
-    @Input
     public String digest = "SHA-512";
     public Object licenseFile = "build/license3j/license.dat";
-    @Input
     public IOFormat licenseFormat = IOFormat.STRING;
     public boolean verbose = true;
+
+    public GenerateLicenseTask() {
+        feature("licenseId", UUID.randomUUID());
+        issuedAt(Instant.now());
+    }
+
+    @Input
+    public Map<String, Feature> getFeatures() {
+        return features;
+    }
 
     @InputFile
     public File getPrivateKeyFile() {
@@ -116,6 +127,16 @@ public class GenerateLicenseTask extends ConventionTask {
         setPublicKeyFile(publicKeyFile);
     }
 
+    @Input
+    public IOFormat getKeyFormat() {
+        return keyFormat;
+    }
+
+    @Input
+    public String getDigest() {
+        return digest;
+    }
+
     @OutputFile
     public File getLicenseFile() {
         return getProject().file(licenseFile);
@@ -129,8 +150,13 @@ public class GenerateLicenseTask extends ConventionTask {
         setLicenseFile(licenseFile);
     }
 
+    @Input
+    public IOFormat getLicenseFormat() {
+        return licenseFormat;
+    }
+
     public void feature(@Nonnull Feature feature) {
-        features.add(feature);
+        features.put(feature.name(), feature);
     }
 
     public void feature(@Nonnull String text) {
@@ -161,12 +187,29 @@ public class GenerateLicenseTask extends ConventionTask {
         feature(Feature.Create.dateFeature(name, value));
     }
 
+    public void feature(@Nonnull String name, @Nonnull UUID value) {
+        feature(Feature.Create.uuidFeature(name, value));
+    }
+
+    public void licenseId(@Nonnull UUID value) {
+        feature("licenseId", value);
+    }
+
+    public void licenseId(@Nonnull String value) {
+        licenseId(UUID.fromString(value));
+    }
+
     public void issuedAt(@Nonnull Date value) {
         feature("issuedAt", value);
     }
 
     public void issuedAt(@Nonnull Instant value) {
         issuedAt(Date.from(value));
+    }
+
+    public void issuedAt(@Nonnull String value) {
+        ZonedDateTime datetime = ZonedDateTime.parse(value, DATE_PARSER);
+        issuedAt(datetime.toInstant());
     }
 
     public void expiresAt(@Nonnull Date value) {
@@ -178,8 +221,8 @@ public class GenerateLicenseTask extends ConventionTask {
     }
 
     public void expiresAt(@Nonnull String value) {
-        // expiresAt(java.time.LocalDateTime.parse(digest, DATE_PARSER));
-        expiresAt(Instant.parse(value));
+        ZonedDateTime datetime = ZonedDateTime.parse(value, DATE_PARSER);
+        expiresAt(datetime.toInstant());
     }
 
     /**
@@ -187,7 +230,27 @@ public class GenerateLicenseTask extends ConventionTask {
      * @param value
      * @param unit
      */
-    public void expiresAfter(@Nonnegative long value, @Nonnull TemporalUnit unit) {
+    public void expiresAfterIssue(@Nonnegative long value, @Nonnull TemporalUnit unit) {
+        Date issuedAtDate = features.get("issuedAt").getDate();
+        Instant issuedAt = Instant.ofEpochMilli(issuedAtDate.getTime());
+        expiresAt(issuedAt.plus(value, unit));
+    }
+
+    /**
+     * @see ChronoUnit
+     * @param value
+     * @param unit
+     */
+    public void expiresAfterIssue(@Nonnegative long value, @Nonnull String unit) {
+        expiresAfterIssue(value, Enum.valueOf(ChronoUnit.class, unit));
+    }
+
+    /**
+     * @see Instant#plus(long, TemporalUnit)
+     * @param value
+     * @param unit
+     */
+    public void expiresAfterNow(@Nonnegative long value, @Nonnull TemporalUnit unit) {
         expiresAt(Instant.now().plus(value, unit));
     }
 
@@ -196,8 +259,8 @@ public class GenerateLicenseTask extends ConventionTask {
      * @param value
      * @param unit
      */
-    public void expiresAfter(@Nonnegative long value, @Nonnull String unit) {
-        expiresAfter(value, Enum.valueOf(ChronoUnit.class, unit));
+    public void expiresAfterNow(@Nonnegative long value, @Nonnull String unit) {
+        expiresAfterIssue(value, Enum.valueOf(ChronoUnit.class, unit));
     }
 
     private void dump(@Nonnull License license) throws IOException {
@@ -229,7 +292,7 @@ public class GenerateLicenseTask extends ConventionTask {
             LicenseKeyPair keyPair = read(getPrivateKeyFile(), getPublicKeyFile(), keyFormat);
 
             License license = new License();
-            for (Feature feature : features)
+            for (Feature feature : features.values())
                 license.add(feature);
             license.sign(keyPair.getPair().getPrivate(), digest);
             if (verbose)

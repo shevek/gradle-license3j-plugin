@@ -27,16 +27,28 @@ public class GenerateLicenseKeysTask extends ConventionTask {
     public static final String PRIVATE_KEY_FILE = "build/license3j/private.key";
     public static final String PUBLIC_KEY_FILE = "build/license3j/public.key";
 
-    @Input
     public String algorithm = "RSA/ECB/PKCS1Padding";
-    @Input
     public int keySize = 2048;
-    @Input
     public IOFormat keyFormat = License3jPlugin.DEFAULT_KEY_FORMAT;
 
     public Object privateKeyFile = PRIVATE_KEY_FILE;
     public Object publicKeyFile = PUBLIC_KEY_FILE;
     public Object javaFile = "build/license3j/LicenseKeys.java";
+
+    @Input
+    public String getAlgorithm() {
+        return algorithm;
+    }
+
+    @Input
+    public int getKeySize() {
+        return keySize;
+    }
+
+    @Input
+    public IOFormat getKeyFormat() {
+        return keyFormat;
+    }
 
     @OutputFile
     public File getPrivateKeyFile() {
@@ -69,7 +81,7 @@ public class GenerateLicenseKeysTask extends ConventionTask {
         }
 
         byte[] publicKey = pair.getPublic();
-        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        MessageDigest md = MessageDigest.getInstance("SHA-512");
         byte[] digest = md.digest(publicKey);
         StringBuilder buf = new StringBuilder("final byte [] DIGEST = new byte[] {");
         appendJava(buf, digest);

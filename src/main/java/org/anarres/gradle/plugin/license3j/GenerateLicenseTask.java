@@ -22,7 +22,6 @@ import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
 import java.util.Base64;
-import java.util.Date;
 import java.util.Objects;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
@@ -37,10 +36,10 @@ import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 import static java.time.temporal.ChronoField.*;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
+import javax.annotation.CheckForNull;
 
 /**
  *
@@ -154,6 +153,21 @@ public class GenerateLicenseTask extends ConventionTask {
     @Input
     public IOFormat getLicenseFormat() {
         return licenseFormat;
+    }
+
+    @CheckForNull
+    public Instant getLicenseExpiresAt() {
+        Feature feature = features.get("expiresAt");
+        if (feature == null)
+            return null;
+        return feature.getInstant();
+    }
+
+    public boolean isLicenseExpired() {
+        Instant expiresAt = getLicenseExpiresAt();
+        if (expiresAt == null)
+            return false;
+        return Instant.now().isAfter(expiresAt);
     }
 
     public void feature(@Nonnull Feature feature) {

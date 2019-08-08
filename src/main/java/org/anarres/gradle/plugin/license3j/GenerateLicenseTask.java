@@ -92,7 +92,6 @@ public class GenerateLicenseTask extends ConventionTask {
     public boolean verbose = true;
 
     public GenerateLicenseTask() {
-        feature("licenseId", UUID.randomUUID());
         issuedAt(Instant.now());
     }
 

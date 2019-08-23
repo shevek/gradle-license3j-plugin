@@ -1,15 +1,16 @@
 buildscript {
 	repositories {
 		// For stdproject
-		// mavenLocal()
+		mavenLocal()
 		// For stdproject
 		// maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
 		mavenCentral()
 		jcenter()
+		gradlePluginPortal()
 	}
 
 	dependencies {
-		classpath 'org.anarres.gradle:gradle-stdproject-plugin:1.0.9'
+		classpath 'org.anarres.gradle:gradle-stdproject-plugin:1.0.10'
 	}
 }
 
@@ -33,7 +34,9 @@ repositories {
 }
 
 dependencies {
-	compile gradleApi()
+	implementation gradleApi()
+	implementation localGroovy()
+
 	implementation 'com.google.code.findbugs:annotations:3.0.1'
 	implementation 'org.anarres.mirrors.license3j:license3j:3.1.0.2'
 	// compile 'org.bouncycastle:bcprov-ext-jdk15on:1.61'

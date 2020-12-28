@@ -40,6 +40,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import javax.annotation.CheckForNull;
+import org.gradle.api.tasks.Internal;
 
 /**
  *
@@ -155,6 +156,7 @@ public class GenerateLicenseTask extends ConventionTask {
     }
 
     @CheckForNull
+    @Internal
     public Instant getLicenseExpiresAt() {
         Feature feature = features.get("expiresAt");
         if (feature == null)
@@ -162,6 +164,7 @@ public class GenerateLicenseTask extends ConventionTask {
         return feature.getInstant();
     }
 
+    @Internal
     public boolean isLicenseExpired() {
         Instant expiresAt = getLicenseExpiresAt();
         if (expiresAt == null)

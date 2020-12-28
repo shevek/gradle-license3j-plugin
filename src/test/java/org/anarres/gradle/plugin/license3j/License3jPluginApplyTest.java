@@ -49,7 +49,8 @@ public class License3jPluginApplyTest {
                 A("3.4.1"),
                 A("4.5.1"),
                 A("4.10.3"),
-                A("5.6")
+                A("5.6"),
+                A("6.1")
         );
     }
     private final String gradleVersion;
